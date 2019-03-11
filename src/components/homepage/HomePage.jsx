@@ -6,6 +6,7 @@ class HomePage extends Component {
     constructor(props){
         super(props)
         this.state = {
+            isProducts: false,
             products: null,
             newProduct: {
                 nombre: null,
@@ -14,6 +15,19 @@ class HomePage extends Component {
             }
         }
     }
+
+    componentDidMount = () => {
+        firebase.firestore().collection('products_crud')
+            .onSnapshot((products)=>{
+                let products_array = []
+                products.forEach((product)=>{
+                    products_array.push(product.data())
+                })
+                this.setState({products: products_array, isProducts: true})
+            })
+    }
+
+
     updateName=(e)=>{
       //let nombre=this.state.newProduct.nombre
       //let {nombre} = this.state.newProduct
@@ -53,7 +67,12 @@ class HomePage extends Component {
         return (
             <div className="container">
                 <div className="products_container">
-
+                    {this.state.isProducts ?
+                        this.state.products.map((product, index)=>(
+                            <p>Nombre: {product.nombre}    Descripcion: {product.desc}    Cantidad: {product.cantidad} </p>
+                        ))
+                        :null
+                    }
                 </div>
 
                 <div className="products_form">
