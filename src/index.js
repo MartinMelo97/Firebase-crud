@@ -11,7 +11,7 @@ firebase.initializeApp({
         authDomain: "farmaciabackend2.firebaseapp.com",
         databaseURL: "https://farmaciabackend2.firebaseio.com",
         projectId: "farmaciabackend2",
-        storageBucket: "",
+        storageBucket: "farmaciabackend2.appspot.com",
         messagingSenderId: "1092955129378"
     })
 

@@ -11,10 +11,14 @@ class HomePage extends Component {
             newProduct: {
                 nombre: null,
                 desc: null,
-                cantidad: null
+                cantidad: null,
+                imagen: null
             },
             action: "Subir",
-            idProductToEdit: null
+            idProductToEdit: null,
+            currentImage: null,
+            percentage: null,
+            hasUploaded: false
         }
     }
 /*
@@ -59,22 +63,54 @@ class HomePage extends Component {
         this.setState({newProduct: product})
     }
 
+    imageToStorage = () => {
+        const storageRef = firebase.storage().ref(`images/${this.state.currentImage.name}`)
+        const task = storageRef.put(this.state.currentImage)
+
+        task.on('state_changed', snapshot => {
+            let percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            this.setState({percentage})
+
+        },
+        err=>{
+            alert("Hubo un error al subir la imagen")
+            console.log(err)
+        },
+        ()=>{
+            task.snapshot.ref.getDownloadURL()
+            .then((url)=>{
+                console.log(url)
+                debugger
+                let { newProduct } = this.state
+                newProduct.imagen = url
+                this.setState({newProduct, hasUploaded: true})
+                this.createProduct()
+                
+            })
+        }
+        )
+
+    }
+
     createProduct = (e) => {
         if(this.state.action === "Subir")
         {
-            firebase.firestore().collection('products_crud').add(this.state.newProduct)
-            .then(()=>{
-                alert("Producto añadido correctamente")
-                let copy = this.state.newProduct
-                copy.nombre = ""
-                copy.desc = ""
-                copy.cantidad = ""
-                this.setState({newProduct: copy})
-            })
-            .catch((err)=>{
-                alert("No se pudo crear el producto, checa la consola")
-                console.log(err)
-            })
+            if(this.state.hasUploaded)
+            {
+                firebase.firestore().collection('products_crud').add(this.state.newProduct)
+                .then(()=>{
+                    alert("Producto añadido correctamente")
+                    let copy = this.state.newProduct
+                    copy.nombre = ""
+                    copy.desc = ""
+                    copy.cantidad = ""
+                    this.setState({newProduct: copy})
+                })
+                .catch((err)=>{
+                    alert("No se pudo crear el producto, checa la consola")
+                    console.log(err)
+                })
+            }
         }
         else //Actualizar el producto
         {
@@ -118,6 +154,11 @@ class HomePage extends Component {
         }
     }
 
+    changeImage = (e) => {
+        let image = e.target.files[0]
+        this.setState({currentImage: image})
+    }
+
     render(){
         return (
             <div className="container">
@@ -125,9 +166,18 @@ class HomePage extends Component {
                     {this.state.isProducts ?
                         this.state.products.map((product, index)=>(
                             <div key={index}>
-                                <p>Nombre: {product.nombre}    Descripcion: {product.desc}    Cantidad: {product.cantidad} </p>
+                                <p>{product.nombre}</p>
+                                <p>{product.desc}</p>
+                                <p>{product.cantidad}</p>
+                                {
+                                    product.imagen ?
+                                        <img src={product.imagen} width="100" height="100"/>
+                                        :
+                                        <img src="https://i0.wp.com/www.datanumen.com/blogs/wp-content/uploads/2016/07/The-file-does-not-exist.png?resize=232%2C147&ssl=1" width="100" height="100"/>
+                                }
                                 <button onClick={(e)=>this.updateProduct(e, product.id)}>Editar</button>
                                 <button onClick={(e)=>this.deleteProduct(e, product.id)}>Eliminar</button>
+                                <hr />
                             </div>
                         ))
                         :
@@ -156,13 +206,19 @@ class HomePage extends Component {
                         value={this.state.newProduct.cantidad} 
                     />
 
-                    <button onClick={(e)=>this.createProduct(e)}>{this.state.action}</button>
+                    <input type="file"
+                    onChange={(e)=>this.changeImage(e)}
+                    />
+
+                    <button onClick={(e)=>this.imageToStorage(e)}>{this.state.action}</button>
 
                     {
                         this.state.action === "Actualizar" ? 
                             <button onClick={this.cancelUpdate}>Perdón, la cagué, quiero subir producto</button>
                             : null
                     }
+
+                    <p>PORCENTAJE: {this.state.percentage} </p>
                 </div>
             </div>
         )
